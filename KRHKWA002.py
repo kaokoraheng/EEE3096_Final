@@ -93,7 +93,7 @@ def callback4(display):
           for j in range(length):
               print(mylist2[j])
 
-def timeHere(timein):  #returns the correct time
+def timeHere(timein):  #returns the correct time (SA)
      x = str(timein)
      x = x.split('.')
      pt = datetime.strptime(x[0] ,'%H:%M:%S')
