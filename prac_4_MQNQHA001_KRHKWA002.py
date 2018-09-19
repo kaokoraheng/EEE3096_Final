@@ -1,4 +1,4 @@
-###########################################################################################
+############################################################################################
 #!/usr/bin/python
 #IMPORTS
 import spidev
@@ -93,7 +93,7 @@ def callback4(display):
           for j in range(length):
               print(mylist2[j])
 
-def timeHere(timein):  #returns the correct time (SA)
+def timeHere(timein):  #returns the correct time
      x = str(timein)
      x = x.split('.')
      pt = datetime.strptime(x[0] ,'%H:%M:%S')
@@ -128,3 +128,61 @@ def ConvertToTemp(data, places):
         temp = ( 100*vout ) - 50            #convert the output voltage to a temperature using the information from the datasheeet
         return temp                         #return the temperature
 
+##############################################################################################################################
+
+
+GPIO.setmode(GPIO.BCM) #specify numbering system
+
+#Setup the Button Pull Up and Pull Down Resistors 
+GPIO.setup(reset, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(frequency, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(stop, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(display, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+# Cause delays to be percieved
+delay = 0.5   #default delay is 500 ms = 0.5 s
+           
+# Under a rising-edge detection, regardless of current execution # callback function will be called
+GPIO.add_event_detect(reset, GPIO.RISING, callback=callback1, bouncetime=200)
+GPIO.add_event_detect(frequency, GPIO.RISING, callback=callback2, bouncetime=200)
+GPIO.add_event_detect(stop, GPIO.RISING, callback=callback3, bouncetime=200)
+GPIO.add_event_detect(display, GPIO.RISING, callback=callback4, bouncetime=200)
+
+spi = spidev.SpiDev() # create spi object
+spi.open(0,0)
+spi.max_speed_hz = 1000000
+
+try:
+    while True:
+      
+      while go == True:
+              
+          #Default
+          current_time =timeHere(datetime.now().time())  #get the current time
+          elapsed_time_in_seconds = time.time() - start_time   #measure elapsed time WCT in seconds
+          elapsed_time =timingForm(elapsed_time_in_seconds)   #elapsed time correctly formatted
+          
+          
+          #read the sensors          
+          #potentiometer: in channel 2
+          pot_data = GetData(2) #10 bits from ADC
+          pot_volts = ConvertPotV(pot_data, 2)  #convert to volts to display
+          
+          #temperature sensor: in channel 1
+          temp_data = GetData(1) #10 bits from the ADC
+          temp = ConvertToTemp(temp_data, 2) #cnvert to degrees Celsius
+          
+          #light sensor/LDR: in channel 0
+          light_data = GetData(0) #10 bits from the ADC
+          light = ConvertToLDR_V(light_data, 2)   #convert to percentage
+          
+          
+          print("Time           Timer      Pot       Temp      Light")
+          system_data = current_time  + "    " + str(elapsed_time) + "      " + str(pot_volts) + " V     " + str(temp) + " C     " + str(light) + "%"
+          print(system_data)
+          
+          mylist.append(system_data)
+          time.sleep(delay)
+
+except KeyboardInterrupt:
+          spi.close()
